@@ -9,10 +9,10 @@ import { DataModule } from './Supabase/Data/data.module';
 import { AuthModule } from './Supabase/auth/auth.module';
 
 // 미들웨어
-import { RateLimitMiddleware } from './Rredis/Middleware/RateLimitMiddleware'; // 미들웨어에서 사용하는 함수
-import { RredisModule } from './Rredis/redis.module'; // 미들웨어 모듈
-import { RateLimitService } from './Rredis/Middleware/function/RateLimitService'; // 미들웨어에서 사용하는 서비스
-import { Get_User_Id } from './Rredis/Middleware/Supabase/Get_User_ID'; // 미들웨어에서 사용하는 함수
+import { RateLimitMiddleware } from './Redis/Middleware/RateLimitMiddleware'; // 미들웨어에서 사용하는 함수
+import { RredisModule } from './Redis/redis.module'; // 미들웨어 모듈
+import { RateLimitService } from './Redis/Middleware/function/RateLimitService'; // 미들웨어에서 사용하는 서비스
+import { Get_User_Id } from './Redis/Middleware/Supabase/Get_User_ID'; // 미들웨어에서 사용하는 함수
 
 @Module({
   imports: [
