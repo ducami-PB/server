@@ -22,8 +22,6 @@ export class UpdateService {
     afterTitle: string,
     afterLink: string,
   ): Promise<{ type: string; error: string | null }> {
-    console.log(token);
-
     const { data: user, error: finduserError } =
       await this.supabase.auth.getUser(token);
 

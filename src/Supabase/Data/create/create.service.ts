@@ -26,7 +26,8 @@ export class CreateService {
     link: string,
     memo: string,
   ): Promise<{ type: string; error: string | null | Error }> {
-    const { data: user, error : finduserError } = await this.supabase.auth.getUser(token);
+    const { data: user, error: finduserError } =
+      await this.supabase.auth.getUser(token);
 
     if (finduserError) {
       return {
@@ -36,8 +37,6 @@ export class CreateService {
     }
 
     const email = user?.user?.email;
-
-
 
     // title 조건 확인
     const { data: titleMatch, error: titleError } = await this.supabase
@@ -86,7 +85,7 @@ export class CreateService {
 
       return {
         type: 'Success',
-        error: '0',
+        error: null,
       };
     } else {
       // 기본 이미지

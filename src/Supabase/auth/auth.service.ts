@@ -1,7 +1,4 @@
-//로그인 회원가입 관련 장난질
-
-import { Body, Injectable } from '@nestjs/common';
-
+import { Injectable } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Supabase } from '../db/Supabase';
 import { DatabaseType } from '../types/SupabaseType';
@@ -15,9 +12,10 @@ export class AuthService {
   >;
 
   constructor(private readonly supabaseService: Supabase) {
-    this.supabase = this.supabaseService.getClient(); // 받아오고 바로 초기화
+    this.supabase = this.supabaseService.getClient();
   }
 
+  // 회원가입
   async signUp(
     email: string,
     password: string,
@@ -25,79 +23,96 @@ export class AuthService {
     classNum: string,
   ): Promise<any> {
     try {
-      let { data, error } = await this.supabase.auth.signUp({
+      const { data, error } = await this.supabase.auth.signUp({
         email: email,
         password: password,
         options: {
-          data: {
-            name: name,
-            classNum: classNum,
-          },
+          data: { name: name, classNum: classNum },
         },
       });
 
       if (error) {
-        console.error('Error:', error.message);
+        console.error('Sign-up error:', error.message);
         throw new Error(`Sign-up failed: ${error.message}`);
       }
 
       return data;
     } catch (error) {
-      throw new Error(`Error : ${error.message}`);
+      throw new Error(`Sign-up Error: ${error.message}`);
     }
   }
 
+  // 로그인
   async logIn(email: string, password: string): Promise<any> {
     try {
-      // 1. 로그인 요청
       const { data: authData, error: authError } =
         await this.supabase.auth.signInWithPassword({
-          email: email,
-          password: password,
+          email,
+          password,
         });
 
-      // 2. 로그인 실패 처리
-      if (authError || !authData?.user?.id) {
+      if (authError || !authData?.session) {
         throw new Error(
           `Authentication failed: ${authError?.message || 'Unknown error'}`,
         );
       }
 
-      // 3. 로그인 성공
-      if (authData) {
-        const jwtToken = authData.session.access_token;
+      const { access_token, refresh_token } = authData.session;
 
-        // 사용자 이름 조회
-        const { data: userInfo, error: userError } = await this.supabase
-          .from('userinfo')
-          .select('*')
-          .eq('id', authData.user.id)
-          .single(); // .single()을 사용하여 하나의 데이터만 반환하도록
+      const { data: userInfo, error: userError } = await this.supabase
+        .from('userinfo')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
 
-        // 유저 정보 조회 에러 처리
-        if (userError) {
-          throw new Error(`User info retrieval failed: ${userError.message}`);
-        }
-
-        return {
-          jwtToken: jwtToken,
-          name: userInfo.username, // 사용자 이름 반환
-        };
+      if (userError) {
+        throw new Error(`User info retrieval failed: ${userError.message}`);
       }
+
+      return {
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        name: userInfo.username,
+      };
     } catch (error: any) {
-      // 4. 에러 처리
       console.error(error);
-      throw new Error(`Login error: ${error.message}`);
+      throw new Error(`Login Error: ${error.message}`);
     }
   }
 
-  async getuser(email: string, token: string): Promise<any> {
+  //리프래쉬 토큰 재발급
+  async refreshToken(refreshToken: string): Promise<any> {
+    try {
+      const { data: refreshData, error: refreshError } =
+        await this.supabase.auth.refreshSession({
+          refresh_token: refreshToken,
+        });
+
+      if (refreshError || !refreshData?.session) {
+        throw new Error(
+          `Refresh token failed: ${refreshError?.message || 'Unknown error'}`,
+        );
+      }
+
+      const { access_token } = refreshData.session;
+
+      return {
+        accessToken: access_token,
+      };
+    } catch (error: any) {
+      console.error('Refresh Token Error:', error.message);
+      throw new Error(`Refresh Token Error: ${error.message}`);
+    }
+  }
+
+  //유저정보
+  async getUser(token: string): Promise<any> {
     const { data: user, error } = await this.supabase.auth.getUser(token);
-    return {
-      token: token,
-      email: email,
-      data: user,
-      error: error,
-    };
+
+    if (error) {
+      throw new Error(`Get user failed: ${error.message}`);
+    }
+
+    return { user };
   }
 }

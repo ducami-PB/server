@@ -41,8 +41,11 @@ export class AppModule {
           path: 'supabase/signUp',
           method: RequestMethod.ALL,
         },
+        {
+          path: 'supabase/get-refresh-token',
+          method: RequestMethod.POST,
+        },
       )
-
       .forRoutes('*'); // 나머지 모든 경로(+모든 요청)에 대해 미들웨어를 적용
 
     // 특정 미들웨어에만 적용

@@ -1,26 +1,13 @@
-//로그인 회원가입
-
-import {
-  Body,
-  Headers,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
-
-import { Injectable } from '@nestjs/common';
+import { Body, Headers, Controller, Get, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
-@Injectable()
+import { ResponseStatus } from '../types/types';
+
 @Controller('supabase')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // 회원가입
   @Post('/signUp')
   async signUp(
     @Body()
@@ -30,36 +17,62 @@ export class AuthController {
       name: string;
       classNum: string;
     },
-  ): Promise<{ Whether: string }> {
+  ): Promise<ResponseStatus> {
     const { email, password, name, classNum } = signUpData;
+
     try {
       await this.authService.signUp(email, password, name, classNum);
-
-      return {
-        Whether: 'Success',
-      };
+      return { status: 'Success' }; // 성공 시 message는 생략
     } catch (error) {
       return {
-        Whether: 'failed',
+        status: 'Failed',
+        message: error.message, // 실패 시 message를 추가
       };
     }
   }
 
-  @Post('/signin')
-  async login(
+  // 로그인
+  @Post('/signIn')
+  async logIn(
     @Body() loginData: { email: string; password: string },
-  ): Promise<string> {
+  ): Promise<{ accessToken: string; refreshToken: string; name: string }> {
     const { email, password } = loginData;
-    return await this.authService.logIn(email, password);
+
+    try {
+      const result = await this.authService.logIn(email, password);
+      return result; // accessToken, refreshToken, name 반환
+    } catch (error) {
+      throw new Error(`Login failed: ${error.message}`);
+    }
   }
 
+  // 리프레시 토큰으로 액세스 토큰 재발급
+  @Post('/get-refresh-token')
+  async refreshToken(
+    @Body() refreshData: { refreshToken: string },
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const { refreshToken } = refreshData;
+
+    try {
+      const result = await this.authService.refreshToken(refreshToken);
+      return result; // 새로운 accessToken, refreshToken 반환
+    } catch (error) {
+      throw new Error(`Token refresh failed: ${error.message}`);
+    }
+  }
+
+  // 유저 정보 가져오기
   @Get('/getUser')
   async getUser(
-    @Body() data: { email: string },
-    @Headers('Authorization') authorization: string, //Authorization
-  ): Promise<string> {
-    const { email } = data;
-    const token = authorization.substring('Bearer '.length);
-    return await this.authService.getuser(email, token);
+    @Headers('Authorization') authorization: string,
+  ): Promise<{ user: any }> {
+    const token = authorization.replace('Bearer ', '');
+
+    try {
+      const result = await this.authService.getUser(token);
+      return result; // 유저 정보 반환
+    } catch (error) {
+      throw new Error(`Get user failed: ${error.message}`);
+    }
   }
 }
